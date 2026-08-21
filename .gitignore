@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+.env.*
+
+# Node / Angular
+node_modules/
+.angular/
+dist/
+out-tsc/
+
+# Database and local state
+*.db
+*.sqlite3
+.logs/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/

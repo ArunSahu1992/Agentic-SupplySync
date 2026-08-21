@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "name": "Northwind Components",
+    "status": "active"
+  },
+  {
+    "id": 2,
+    "name": "Summit Plastics",
+    "status": "monitoring"
+  },
+  {
+    "id": 3,
+    "name": "Blue Harbor Logistics",
+    "status": "active"
+  }
+]
