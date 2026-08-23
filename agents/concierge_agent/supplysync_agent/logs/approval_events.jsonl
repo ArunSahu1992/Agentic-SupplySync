@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-21T15:12:15.542087+00:00", "request_id": "ORD-1001", "status": "approved", "risk_score": 12, "decision_reason": "Risk flag: new_supplier", "reviewed_by": "system", "notes": ["auto_approve"]}
