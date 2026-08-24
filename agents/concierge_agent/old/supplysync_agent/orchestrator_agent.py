@@ -59,8 +59,6 @@ Create canonical order_data containing:
 
     "requester_email": "...",
 
-    "mobile_number": "...",
-
     "estimated_delivery_date": null
 }
 
@@ -80,20 +78,6 @@ Example:
 "2026-08-25"
 
 Do NOT calculate a revised delivery date.
-
-============================================================
-MOBILE NUMBER
-============================================================
-
-mobile_number is optional.
-
-If provided by the user:
-
-- preserve it exactly
-- do not modify it
-- do not invent a mobile number
-
-If not provided, keep it missing or null.
 
 ============================================================
 RULES

@@ -1,31 +1,47 @@
+"""Partial order and revised payment computation service.
+
+This module processes order adjustments when only a fraction of an order can be fulfilled.
+It recalculates prorated order totals and applies policy-driven discount percentages.
+"""
+
 from datetime import datetime, timezone
+from typing import Any, Dict
 
 from models.action_models import SupplyActionRequest
 
 
 class PartialOrderService:
+    """Calculates partial fulfillment metrics and updated billing amounts.
 
-    """
     Handles:
+        partial_order_revised_payment
 
-    partial_order_revised_payment
-
-    The discount percentage comes from
-    the Policy MCP decision.
-
-    This service does NOT decide
-    the discount percentage.
+    Note:
+        The discount percentage comes directly from the upstream Policy MCP decision.
+        This service does NOT compute or evaluate policy eligibility; it only applies
+        the provided `additional_discount_percent`.
     """
-
 
     def execute(
         self,
         request: SupplyActionRequest,
-    ) -> dict:
+    ) -> Dict[str, Any]:
+        """Executes quantity fulfillment and payment adjustment calculations.
 
+        Args:
+            request (SupplyActionRequest): Incoming request payload containing original order 
+                quantities, affected quantities, financial amounts, and policy discount values.
+
+        Returns:
+            Dict[str, Any]: Structured execution envelope containing action status, execution timestamp,
+                and a breakdown of quantity ratios, baseline partial amounts, discount subtractions, 
+                and final revised amounts.
+        """
 
         # ====================================================
         # QUANTITY CALCULATION
+        # Determine fulfillable quantity based on total vs affected quantities.
+        # Clamp value to zero to prevent negative fulfillment.
         # ====================================================
 
         fulfillable_qty = (
@@ -38,14 +54,13 @@ class PartialOrderService:
 
         )
 
-
         if fulfillable_qty < 0:
 
             fulfillable_qty = 0
 
-
         # ====================================================
         # PARTIAL RATIO
+        # Calculate proportional ratio of fulfillable stock relative to original order.
         # ====================================================
 
         partial_ratio = (
@@ -58,9 +73,9 @@ class PartialOrderService:
 
         )
 
-
         # ====================================================
         # REVISED ORDER AMOUNT
+        # Calculate prorated base order value for fulfillable items prior to extra discounts.
         # ====================================================
 
         original_partial_amount = round(
@@ -73,9 +88,9 @@ class PartialOrderService:
 
         )
 
-
         # ====================================================
         # POLICY DISCOUNT
+        # Apply the Policy MCP decision discount percentage to the prorated base amount.
         # ====================================================
 
         additional_discount_percent = (
@@ -83,7 +98,6 @@ class PartialOrderService:
             request.additional_discount_percent
 
         )
-
 
         discount_amount = round(
 
@@ -97,9 +111,9 @@ class PartialOrderService:
 
         )
 
-
         # ====================================================
         # FINAL AMOUNT
+        # Deduct calculated policy discount from base prorated order value.
         # ====================================================
 
         revised_final_amount = round(
@@ -112,9 +126,9 @@ class PartialOrderService:
 
         )
 
-
         # ====================================================
         # SUCCESS RESPONSE
+        # Build standard success response payload detailing quantity and financial adjustments.
         # ====================================================
 
         return {
@@ -130,7 +144,6 @@ class PartialOrderService:
                 ).isoformat(),
 
             "error": None,
-
 
             "execution_details": {
 

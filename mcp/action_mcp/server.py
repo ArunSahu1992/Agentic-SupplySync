@@ -1,3 +1,11 @@
+"""
+SupplySync Action Executor MCP Server Module.
+
+This module initializes the FastMCP server and exposes business-critical 
+tool endpoints for executing supply chain actions, recording audit logs, 
+and dispatching stakeholder notifications.
+"""
+
 import json
 
 from mcp.server.fastmcp import FastMCP
@@ -25,6 +33,7 @@ from services.notification_service import (
 # MCP SERVER
 # ============================================================
 
+# Initialize FastMCP instance using server configuration settings
 mcp = FastMCP(
 
     "SupplySync Action Executor MCP Server",
@@ -39,6 +48,7 @@ mcp = FastMCP(
 # SERVICES
 # ============================================================
 
+# Instantiate domain services required for orchestration
 action_service = ActionService()
 
 audit_service = AuditService()
@@ -111,6 +121,25 @@ def execute_supply_action(
     - reschedule_order
     - cancel_order_refund
     - partial_order_revised_payment
+
+    Args:
+        workflow_id (str): Unique identifier for the workflow execution.
+        order_id (str): Identifier for the order being updated.
+        product (str): Name or description of the product involved.
+        supplier (str): Name of the product supplier.
+        recommended_action (str): The specific action to execute.
+        reason (str): Contextual reason driving the action request.
+        ordered_qty (int): Total original order quantity.
+        affected_qty (int): Quantity impacted by disruption or changes.
+        total_order_amount (float): Total monetary value of the order.
+        additional_discount_percent (float, optional): Applied discount percentage. Defaults to 0.
+        requester_name (str, optional): Name of initiating party. Defaults to "".
+        requester_email (str, optional): Email of initiating party. Defaults to "".
+        estimated_delivery_date (str | None, optional): ISO date string for estimated delivery. Defaults to None.
+        reschedule_days (int, optional): Number of days to extend delivery date. Defaults to 0.
+
+    Returns:
+        str: JSON-encoded string aggregating execution, audit, and notification responses.
     """
 
 
@@ -118,6 +147,7 @@ def execute_supply_action(
     # CREATE REQUEST
     # ========================================================
 
+    # Construct strongly-typed domain model from input payload
     request = SupplyActionRequest(
 
         workflow_id=workflow_id,
@@ -158,6 +188,7 @@ def execute_supply_action(
     # STEP 1 — EXECUTE ACTION
     # ========================================================
 
+    # Dispatch request to action handler service
     action_result = action_service.execute(
         request
     )
@@ -169,6 +200,7 @@ def execute_supply_action(
     # All services return dictionaries.
     # ========================================================
 
+    # Extract top-level execution status with failure fallback
     action_status = action_result.get(
         "status",
         "FAILED",
@@ -179,6 +211,7 @@ def execute_supply_action(
     # STEP 2 — AUDIT
     # ========================================================
 
+    # Record action execution details in the audit log
     audit_result = audit_service.write_log(
 
         request=request,
@@ -197,6 +230,7 @@ def execute_supply_action(
     # STEP 3 — NOTIFICATION
     # ========================================================
 
+    # Trigger requester notification based on action outcome
     notification_result = (
         notification_service.notify(
 
@@ -219,6 +253,7 @@ def execute_supply_action(
     # EXECUTION DETAILS
     # ========================================================
 
+    # Extract nested execution details or fallback to root details dictionary
     execution_details = action_result.get(
         "execution_details",
 
@@ -233,6 +268,7 @@ def execute_supply_action(
     # FINAL RESPONSE
     # ========================================================
 
+    # Assemble comprehensive execution output object
     response = {
 
         # ----------------------------------------------------
@@ -329,6 +365,7 @@ def execute_supply_action(
     }
 
 
+    # Serialize response dictionary to formatted JSON string
     return json.dumps(
 
         response,
@@ -345,6 +382,7 @@ def execute_supply_action(
 
 if __name__ == "__main__":
 
+    # Log startup banner with server host and port details
     print(
 
         "\n"
@@ -357,6 +395,7 @@ if __name__ == "__main__":
     )
 
 
+    # Boot FastMCP server using streamable HTTP transport layer
     mcp.run(
 
         transport="streamable-http"

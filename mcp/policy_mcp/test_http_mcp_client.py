@@ -12,6 +12,7 @@ from mcp.client.streamable_http import (
 # POLICY MCP URL
 # ============================================================
 
+# Endpoint for the local SupplySync Policy Engine MCP Server running over HTTP SSE
 MCP_URL = (
     "http://127.0.0.1:9000/mcp"
 )
@@ -25,6 +26,10 @@ def print_result(
     title,
     result,
 ):
+    """
+    Utility function to format and display tool execution responses from the MCP Server.
+    Parses JSON text responses if available; otherwise falls back to plain text printing.
+    """
 
     print("\n")
 
@@ -43,6 +48,7 @@ def print_result(
 
             try:
 
+                # Attempt to parse and pretty-print raw string content as JSON
                 data = json.loads(
                     item.text
                 )
@@ -56,6 +62,7 @@ def print_result(
 
             except json.JSONDecodeError:
 
+                # Print raw text directly if the content is not JSON-formatted
                 print(
                     item.text
                 )
@@ -72,6 +79,15 @@ async def evaluate_test(
     title,
     arguments,
 ):
+    """
+    Asynchronously invokes the 'evaluate_supply_decision' tool on the MCP server 
+    and handles input/output logging for validation.
+    
+    :param session: Active MCP ClientSession instance
+    :param title: Descriptive test identifier for logging
+    :param arguments: Dictionary of payload parameters passed to the policy tool
+    :return: CallToolResult object containing the evaluation outcome
+    """
 
     print("\n\n")
 
@@ -90,6 +106,7 @@ async def evaluate_test(
         )
     )
 
+    # Executing the target MCP tool on the server
     result = await session.call_tool(
 
         "evaluate_supply_decision",
@@ -97,6 +114,7 @@ async def evaluate_test(
         arguments=arguments,
     )
 
+    # Display the structured response output
     print_result(
 
         f"{title} RESULT",
@@ -112,6 +130,10 @@ async def evaluate_test(
 # ============================================================
 
 async def main():
+    """
+    Main entry point for running the test suite across multiple supply disruption scenarios.
+    Establishes the HTTP stream transport and initializes the ClientSession.
+    """
 
     print("\n")
 
@@ -133,6 +155,7 @@ async def main():
     )
 
 
+    # Context manager managing transport-layer connection (Streamable HTTP)
     async with streamable_http_client(
         MCP_URL
     ) as (
@@ -146,6 +169,7 @@ async def main():
     ):
 
 
+        # Context manager handling protocol-level interaction and handshakes
         async with ClientSession(
 
             read_stream,
@@ -159,6 +183,7 @@ async def main():
             # INITIALIZE
             # =================================================
 
+            # Perform the MCP protocol initialization handshake
             await session.initialize()
 
             print(
@@ -170,6 +195,7 @@ async def main():
             # LIST TOOLS
             # =================================================
 
+            # Fetch and display available tools exposed by the server for verification
             print(
                 "\nAvailable tools:"
             )
@@ -206,6 +232,7 @@ async def main():
             # requires_approval = true
             # =================================================
 
+            # Executing Test Case 1: Partial Fulfillment (75% recoverable)
             await evaluate_test(
 
                 session=session,
@@ -301,6 +328,7 @@ async def main():
             # approval depends on your cancellation policy
             # =================================================
 
+            # Executing Test Case 2: Complete Fulfillment Failure (0% recoverable)
             await evaluate_test(
 
                 session=session,
@@ -400,6 +428,7 @@ async def main():
             # true
             # =================================================
 
+            # Executing Test Case 3: Shipment Delay & Extended Schedule Impact
             await evaluate_test(
 
                 session=session,
@@ -485,6 +514,7 @@ async def main():
             # EXPECTED SUMMARY
             # =================================================
 
+            # Output baseline assertion benchmarks for verification against MCP tool output
             print("\n\n")
 
             print("=" * 70)
@@ -580,6 +610,7 @@ async def main():
 
 if __name__ == "__main__":
 
+    # Run the main asynchronous execution loop
     asyncio.run(
         main()
     )

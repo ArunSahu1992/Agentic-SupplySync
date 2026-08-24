@@ -1,3 +1,13 @@
+"""
+Model Context Protocol (MCP) Action Server Integration Test Suite.
+
+This script executes integration tests against the SupplySync Action MCP Server 
+using HTTP streaming. It evaluates three supply chain remediation workflows:
+1. Reschedule Order (with policy-driven discount)
+2. Partial Order Fulfillment (with revised billing)
+3. Order Cancellation (with full refund initiation)
+"""
+
 import asyncio
 import json
 
@@ -12,6 +22,7 @@ from mcp.client.streamable_http import (
 # MCP SERVER URL
 # ============================================================
 
+# Target endpoint for the local MCP Streamable HTTP service
 MCP_SERVER_URL = (
     "http://127.0.0.1:9001/mcp"
 )
@@ -25,18 +36,29 @@ def print_result(
     title: str,
     result,
 ):
+    """Format and display tool call results.
+
+    Parses JSON content returned by the MCP tool if available; falls back to raw 
+    text rendering when JSON parsing fails or content is empty.
+
+    Args:
+        title (str): Header section label.
+        result (CallToolResult): The response object returned from the MCP session.
+    """
 
     print("\n")
     print("=" * 70)
     print(title)
     print("=" * 70)
 
+    # Check for empty or non-existent response content
     if not result.content:
 
         print("No result returned.")
 
         return
 
+    # Iterate through content payload blocks
     for content in result.content:
 
         if hasattr(
@@ -46,6 +68,7 @@ def print_result(
 
             try:
 
+                # Attempt to parse response text as JSON for pretty printing
                 data = json.loads(
                     content.text
                 )
@@ -59,6 +82,7 @@ def print_result(
 
             except json.JSONDecodeError:
 
+                # Print unformatted string if content is not valid JSON
                 print(
                     content.text
                 )
@@ -75,6 +99,16 @@ async def execute_action_test(
     title: str,
     arguments: dict,
 ):
+    """Asynchronously execute a specific tool action call over the MCP session.
+
+    Args:
+        session (ClientSession): Active Model Context Protocol client session.
+        title (str): Display title for the test run.
+        arguments (dict): Payload passed directly to the `execute_supply_action` tool.
+
+    Returns:
+        CallToolResult | None: Result object returned from MCP server, or None on failure.
+    """
 
     print("\n")
     print("=" * 70)
@@ -83,6 +117,7 @@ async def execute_action_test(
 
     print("\nINPUT:")
 
+    # Print input argument payload for test traceability
     print(
         json.dumps(
             arguments,
@@ -92,6 +127,7 @@ async def execute_action_test(
 
     try:
 
+        # Dispatch tool call to MCP server
         result = await session.call_tool(
 
             "execute_supply_action",
@@ -99,6 +135,7 @@ async def execute_action_test(
             arguments=arguments,
         )
 
+        # Output parsed response
         print_result(
 
             f"{title} RESULT",
@@ -110,6 +147,7 @@ async def execute_action_test(
 
     except Exception as error:
 
+        # Catch transport, tool, or runtime errors during execution
         print(
             "\nACTION TEST FAILED"
         )
@@ -126,6 +164,7 @@ async def execute_action_test(
 # ============================================================
 
 async def main():
+    """Establish HTTP stream connection, initialize session, and execute end-to-end MCP action tests."""
 
     print("\n")
     print("=" * 70)
@@ -145,6 +184,7 @@ async def main():
     # CONNECT TO STREAMABLE HTTP MCP SERVER
     # ========================================================
 
+    # Establish HTTP streaming transport layer
     async with streamable_http_client(
         MCP_SERVER_URL
     ) as (
@@ -157,6 +197,7 @@ async def main():
 
     ):
 
+        # Bind transport streams to client session manager
         async with ClientSession(
 
             read_stream,
@@ -170,6 +211,7 @@ async def main():
             # INITIALIZE MCP SESSION
             # =================================================
 
+            # Perform standard MCP protocol handshake and capability exchange
             await session.initialize()
 
             print(
@@ -181,6 +223,7 @@ async def main():
             # LIST AVAILABLE TOOLS
             # =================================================
 
+            # Fetch and print advertised capabilities from the server
             tools = await session.list_tools()
 
             print(
@@ -219,6 +262,7 @@ async def main():
             # 47500
             # =================================================
 
+            # Execute Test 1: Order rescheduling scenario with calculated date extension and discount
             await execute_action_test(
 
                 session=session,
@@ -347,6 +391,7 @@ async def main():
             # 7350
             # =================================================
 
+            # Execute Test 2: Partial fulfillment with adjusted payment calculations
             await execute_action_test(
 
                 session=session,
@@ -457,6 +502,7 @@ async def main():
             # 10000
             # =================================================
 
+            # Execute Test 3: Order cancellation workflow and refund triggering
             await execute_action_test(
 
                 session=session,
@@ -555,6 +601,7 @@ async def main():
             # EXPECTED RESULTS
             # =================================================
 
+            # Print benchmark outputs for visual verification against actual returns
             print("\n")
             print("=" * 70)
             print("EXPECTED RESULTS")
@@ -721,6 +768,7 @@ async def main():
 
 if __name__ == "__main__":
 
+    # Run the main asynchronous entry point using the event loop
     asyncio.run(
         main()
     )
